@@ -143,3 +143,55 @@ class TestReturnAccountBalance(unittest.TestCase):
 		self.payments.append(pa.make_payment(contact_id=self.policy.named_insured,
 											 date_cursor=invoices[1].bill_date, amount=200))
 		self.assertEquals(pa.return_account_balance(date_cursor=invoices[1].bill_date), 0)
+
+class TestPolicyCreation(unittest.TestCase):
+
+	@classmethod
+	def setUpClass(cls):
+		cls.test_agent = Contact('Test Agent', 'Agent')
+		cls.test_insured = Contact('Test Insured', 'Named Insured')
+		db.session.add(cls.test_agent)
+		db.session.add(cls.test_insured)
+		db.session.commit()
+
+		cls.policy = Policy('Test Policy', date(2015, 1, 2), 500)
+		cls.policy.named_insured = cls.test_insured.id
+		cls.policy.agent = cls.test_agent.id
+		db.session.add(cls.policy)
+		db.session.commit()
+
+	@classmethod
+	def tearDownClass(cls):
+		db.session.delete(cls.test_insured)
+		db.session.delete(cls.test_agent)
+		db.session.delete(cls.policy)
+		db.session.commit()
+
+	def tearDown(self):
+		for invoice in self.policy.invoices:
+			db.session.delete(invoice)
+		db.session.commit()
+
+	def test_policy_with_two_pay_billing(self):
+		self.policy.billing_schedule = "Two-Pay"
+		pa = PolicyAccounting(self.policy.id)
+		invoices = Invoice.query.filter_by(policy_id=self.policy.id).all()
+		self.assertEqual(len(invoices), 2)
+
+	def test_policy_with_annual_billing(self):
+		self.policy.billing_schedule = "Annual"
+		pa = PolicyAccounting(self.policy.id)
+		invoices = Invoice.query.filter_by(policy_id=self.policy.id).all()
+		self.assertEqual(len(invoices), 1)
+
+	def test_policy_with_quarterly_billing(self):
+		self.policy.billing_schedule = "Quarterly"
+		pa = PolicyAccounting(self.policy.id)
+		invoices = Invoice.query.filter_by(policy_id=self.policy.id).all()
+		self.assertEqual(len(invoices), 4)
+
+	def test_policy_with_monthly_billing(self):
+		self.policy.billing_schedule = "Monthly"
+		pa = PolicyAccounting(self.policy.id)
+		invoices = Invoice.query.filter_by(policy_id=self.policy.id).all()
+		self.assertEqual(len(invoices), 12) 

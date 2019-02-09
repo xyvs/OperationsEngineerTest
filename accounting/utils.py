@@ -119,7 +119,7 @@ class PolicyAccounting(object):
 			invoice.delete()
 
 		# Define Billing Schedules
-		billing_schedules = {'Annual': None, 'Semi-Annual': 3, 'Quarterly': 4, 'Monthly': 12}
+		billing_schedules = {'Annual': None, 'Two-Pay': 2, 'Quarterly': 4, 'Monthly': 12}
 
 		# Generate first invoice
 		invoices = []
