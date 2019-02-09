@@ -114,15 +114,21 @@ class PolicyAccounting(object):
 								.order_by(Invoice.bill_date)\
 								.all()
 
+		# Evaluate underwriting
+		difference = date_cursor - self.policy.effective_date
+		difference_days = difference.days
+
+		if difference_days <= 60:
+			return True
+
 		# Evaluate policy cancelation
 		for invoice in invoices:
 			if not self.return_account_balance(invoice.cancel_date):
 				continue
 			else:
-				print "THIS POLICY SHOULD HAVE CANCELED"
-				break
+				return True
 		else:
-			print "THIS POLICY SHOULD NOT CANCEL"
+			return False
 
 
 	def make_invoices(self):
@@ -233,6 +239,32 @@ class PolicyAccounting(object):
 		# Generate new invoices
 		self.make_invoices()
 
+	def cancel_policy(self, cancellation_description, date_cursor=None):
+		"""
+		 Cancel a policy based on a evaluation
+		 and adds a description about it.
+		"""
+		if not date_cursor:
+			date_cursor = datetime.now().date()
+
+		# Evaluate Cancelation
+		evaluate_cancel = self.evaluate_cancel(date_cursor)
+
+		if evaluate_cancel:
+
+			# Change policy status
+			self.policy.status = 'Canceled'
+			self.policy.cancellation_date = date_cursor
+			self.policy.cancellation_description = cancellation_description
+
+			# Commit to Database
+			db.session.commit()
+
+			return True
+
+		else:
+			print('You can\'t cancel this policy!')
+			return False
 
 ################################
 # The functions below are for the db and 

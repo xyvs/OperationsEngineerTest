@@ -364,3 +364,59 @@ class TestChangeSchedule(unittest.TestCase):
 
 		# Assert the Balance
 		self.assertEquals(balance, 300)
+
+
+class TestPolicyCancellation(unittest.TestCase):
+
+	@classmethod
+	def setUpClass(cls):
+		cls.test_agent = Contact('Test Agent', 'Agent')
+		cls.test_insured = Contact('Test Insured', 'Named Insured')
+		db.session.add(cls.test_agent)
+		db.session.add(cls.test_insured)
+		db.session.commit()
+
+		cls.policy = Policy('Test Policy', date(2015, 1, 1), 1200)
+		cls.policy.named_insured = cls.test_insured.id
+		cls.policy.agent = cls.test_agent.id
+		db.session.add(cls.policy)
+		db.session.commit()
+
+	@classmethod
+	def tearDownClass(cls):
+		db.session.delete(cls.test_insured)
+		db.session.delete(cls.test_agent)
+		db.session.delete(cls.policy)
+		db.session.commit()
+
+	def setUp(self):
+		self.payments = []
+		self.policy.billing_schedule = "Monthly"
+		self.pa = PolicyAccounting(self.policy.id)
+
+	def tearDown(self):
+		for invoice in self.policy.invoices:
+			db.session.delete(invoice)
+		for payment in self.payments:
+			db.session.delete(payment)
+		db.session.commit()
+
+	def test_policy_evaluate_cancellation(self):
+		date_cursor = date(2015, 6, 1)
+		self.assertTrue(self.pa.evaluate_cancel(date_cursor))
+
+	def test_policy_evaluate_cancellation_for_underwriting(self):
+		date_cursor = date(2015, 3, 1)
+		self.assertTrue(self.pa.evaluate_cancel(date_cursor))
+
+	def test_policy_cancelation(self):
+		date_cursor = date(2015, 3, 1)
+
+		# Make Cancelation
+		cancelation = self.pa.cancel_policy("Cancelation Description", date_cursor)
+
+		from time import sleep
+
+		sleep(60)
+		self.assertTrue(cancelation)
+
