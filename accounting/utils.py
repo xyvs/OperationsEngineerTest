@@ -29,7 +29,7 @@ class PolicyAccounting(object):
 		if not date_cursor:
 			date_cursor = datetime.now().date()
 
-		# Select all the expired invoices
+		# Select all the invoices
 		invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
 								.filter(Invoice.bill_date <= date_cursor)\
 								.order_by(Invoice.bill_date)\
@@ -67,9 +67,9 @@ class PolicyAccounting(object):
 
 		# Make payment and commit
 		payment = Payment(self.policy.id,
-						  contact_id,
-						  amount,
-						  date_cursor)
+							contact_id,
+							amount,
+							date_cursor)
 		db.session.add(payment)
 		db.session.commit()
 
@@ -82,7 +82,21 @@ class PolicyAccounting(object):
 		 being paid in full. However, it has not necessarily
 		 made it to the cancel_date yet.
 		"""
-		pass
+		if not date_cursor:
+			date_cursor = datetime.now().date()
+
+		due_amount = self.return_account_balance(date_cursor)
+
+		if due_amount != 0:
+				invoices = Invoice.query\
+					.filter_by(policy_id=self.policy.id)\
+					.filter(Invoice.due_date < date_cursor)\
+					.filter(Invoice.cancel_date > date_cursor)\
+					.all()
+
+				return len(invoices) > 0
+		else:
+			return False
 
 	def evaluate_cancel(self, date_cursor=None):
 		"""
@@ -147,10 +161,10 @@ class PolicyAccounting(object):
 
 				# Generate Invoice
 				invoice = Invoice(self.policy.id,
-								  bill_date,
-								  bill_date + relativedelta(months=1),
-								  bill_date + relativedelta(months=1, days=14),
-								  self.policy.annual_premium / billing_schedules.get(self.policy.billing_schedule))
+									bill_date,
+									bill_date + relativedelta(months=1),
+									bill_date + relativedelta(months=1, days=14),
+									self.policy.annual_premium / billing_schedules.get(self.policy.billing_schedule))
 				invoices.append(invoice)
 
 		elif self.policy.billing_schedule == "Quarterly":
@@ -166,10 +180,10 @@ class PolicyAccounting(object):
 
 				# Generate Invoice
 				invoice = Invoice(self.policy.id,
-								  bill_date,
-								  bill_date + relativedelta(months=1),
-								  bill_date + relativedelta(months=1, days=14),
-								  self.policy.annual_premium / billing_schedules.get(self.policy.billing_schedule))
+									bill_date,
+									bill_date + relativedelta(months=1),
+									bill_date + relativedelta(months=1, days=14),
+									self.policy.annual_premium / billing_schedules.get(self.policy.billing_schedule))
 				invoices.append(invoice)
 
 		elif self.policy.billing_schedule == "Monthly":
@@ -185,10 +199,10 @@ class PolicyAccounting(object):
 
 				# Generate Invoice
 				invoice = Invoice(self.policy.id,
-								  bill_date,
-								  bill_date + relativedelta(months=1),
-								  bill_date + relativedelta(months=1, days=14),
-								  self.policy.annual_premium / billing_schedules.get(self.policy.billing_schedule))
+									bill_date,
+									bill_date + relativedelta(months=1),
+									bill_date + relativedelta(months=1, days=14),
+									self.policy.annual_premium / billing_schedules.get(self.policy.billing_schedule))
 				invoices.append(invoice)
 
 		else:

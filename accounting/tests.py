@@ -154,7 +154,7 @@ class TestPolicyCreation(unittest.TestCase):
 		db.session.add(cls.test_insured)
 		db.session.commit()
 
-		cls.policy = Policy('Test Policy', date(2015, 1, 2), 500)
+		cls.policy = Policy('Test Policy', date(2015, 1, 1), 500)
 		cls.policy.named_insured = cls.test_insured.id
 		cls.policy.agent = cls.test_agent.id
 		db.session.add(cls.policy)
@@ -194,4 +194,99 @@ class TestPolicyCreation(unittest.TestCase):
 		self.policy.billing_schedule = "Monthly"
 		pa = PolicyAccounting(self.policy.id)
 		invoices = Invoice.query.filter_by(policy_id=self.policy.id).all()
-		self.assertEqual(len(invoices), 12) 
+		self.assertEqual(len(invoices), 12)
+
+class TestEvaluateCancellationPendingDueToNonPay(unittest.TestCase):
+
+	@classmethod
+	def setUpClass(cls):
+		cls.test_agent = Contact('Test Agent', 'Agent')
+		cls.test_insured = Contact('Test Insured', 'Named Insured')
+		db.session.add(cls.test_agent)
+		db.session.add(cls.test_insured)
+		db.session.commit()
+
+		cls.policy = Policy('Test Policy', date(2015, 1, 1), 1200)
+		cls.policy.named_insured = cls.test_insured.id
+		cls.policy.agent = cls.test_agent.id
+		db.session.add(cls.policy)
+		db.session.commit()
+
+	@classmethod
+	def tearDownClass(cls):
+		db.session.delete(cls.test_insured)
+		db.session.delete(cls.test_agent)
+		db.session.delete(cls.policy)
+		db.session.commit()
+
+	def setUp(self):
+		self.payments = []
+		self.policy.billing_schedule = "Monthly"
+		self.pa = PolicyAccounting(self.policy.id)
+
+	def tearDown(self):
+		for invoice in self.policy.invoices:
+			db.session.delete(invoice)
+		for payment in self.payments:
+			db.session.delete(payment)
+		db.session.commit()
+
+	def test_evaluate_cancellation_before_due_date(self):
+		self.date_cursor = date(2015, 2, 1)
+
+		self.assertFalse(
+				self.pa.evaluate_cancellation_pending_due_to_non_pay(self.date_cursor)
+		)
+
+	def test_evaluate_cancellation_with_payment_on_due_date(self):
+		self.date_cursor = date(2015, 2, 2)
+		self.payment_date = date(2015, 2, 1)
+
+		self.payments.append(
+			self.pa.make_payment(contact_id=self.policy.named_insured,
+				date_cursor=self.payment_date, amount=200)
+		)
+
+		self.assertFalse(
+				self.pa.evaluate_cancellation_pending_due_to_non_pay(self.date_cursor)
+		)
+
+	def test_evaluate_cancellation_without_payment_on_due_date(self):
+		self.date_cursor = date(2015, 2, 2)
+
+		self.assertTrue(
+				self.pa.evaluate_cancellation_pending_due_to_non_pay(self.date_cursor)
+		)
+
+	def test_evaluate_cancellation_without_payment_on_cancel_date(self):
+		self.date_cursor = date(2015, 2, 15)
+
+		self.assertFalse(
+				self.pa.evaluate_cancellation_pending_due_to_non_pay(self.date_cursor)
+		)
+
+	def test_evaluate_cancellation_with_no_full_payment_on_due_date(self):
+		self.date_cursor = date(2015, 2, 2)
+		self.payment_date = date(2015, 2, 1)
+
+		self.payments.append(
+			self.pa.make_payment(contact_id=self.policy.named_insured,
+				date_cursor=self.payment_date, amount=100)
+		)
+
+		self.assertTrue(
+				self.pa.evaluate_cancellation_pending_due_to_non_pay(self.date_cursor)
+		)
+
+	def test_evaluate_cancellation_with_no_full_payment_on_cancel_date(self):
+		self.date_cursor = date(2015, 2, 15)
+		self.payment_date = date(2015, 2, 1)
+
+		self.payments.append(
+			self.pa.make_payment(contact_id=self.policy.named_insured,
+				date_cursor=self.payment_date, amount=100)
+		)
+
+		self.assertFalse(
+				self.pa.evaluate_cancellation_pending_due_to_non_pay(self.date_cursor)
+		)
