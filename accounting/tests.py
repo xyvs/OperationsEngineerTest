@@ -54,6 +54,15 @@ class TestBillingSchedules(unittest.TestCase):
 		self.assertEquals(len(self.policy.invoices), 1)
 		self.assertEquals(self.policy.invoices[0].amount_due, self.policy.annual_premium)
 
+	def test_monthly_billing_schedule(self):
+		self.policy.billing_schedule = "Monthly"
+		#No invoices currently exist
+		self.assertFalse(self.policy.invoices)
+		#Invoices should be made when the class is initiated
+		pa = PolicyAccounting(self.policy.id)
+		self.assertEquals(len(self.policy.invoices), 12)
+		self.assertEquals(self.policy.invoices[0].amount_due, self.policy.annual_premium / 12)
+
 
 class TestReturnAccountBalance(unittest.TestCase):
 
@@ -98,12 +107,24 @@ class TestReturnAccountBalance(unittest.TestCase):
 		pa = PolicyAccounting(self.policy.id)
 		self.assertEquals(pa.return_account_balance(date_cursor=self.policy.effective_date), 300)
 
+	def test_monthly_on_eff_date(self):
+		self.policy.billing_schedule = "Monthly"
+		pa = PolicyAccounting(self.policy.id)
+		self.assertEquals(pa.return_account_balance(date_cursor=self.policy.effective_date), 100)
+
 	def test_quarterly_on_last_installment_bill_date(self):
 		self.policy.billing_schedule = "Quarterly"
 		pa = PolicyAccounting(self.policy.id)
 		invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
 								.order_by(Invoice.bill_date).all()
 		self.assertEquals(pa.return_account_balance(date_cursor=invoices[3].bill_date), 1200)
+
+	def test_monthly_on_last_installment_bill_date(self):
+		self.policy.billing_schedule = "Monthly"
+		pa = PolicyAccounting(self.policy.id)
+		invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
+								.order_by(Invoice.bill_date).all()
+		self.assertEquals(pa.return_account_balance(date_cursor=invoices[11].bill_date), 1200)
 
 	def test_quarterly_on_second_installment_bill_date_with_full_payment(self):
 		self.policy.billing_schedule = "Quarterly"
@@ -112,4 +133,13 @@ class TestReturnAccountBalance(unittest.TestCase):
 								.order_by(Invoice.bill_date).all()
 		self.payments.append(pa.make_payment(contact_id=self.policy.named_insured,
 											 date_cursor=invoices[1].bill_date, amount=600))
+		self.assertEquals(pa.return_account_balance(date_cursor=invoices[1].bill_date), 0)
+
+	def test_monthly_on_second_installment_bill_date_with_full_payment(self):
+		self.policy.billing_schedule = "Monthly"
+		pa = PolicyAccounting(self.policy.id)
+		invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
+								.order_by(Invoice.bill_date).all()
+		self.payments.append(pa.make_payment(contact_id=self.policy.named_insured,
+											 date_cursor=invoices[1].bill_date, amount=200))
 		self.assertEquals(pa.return_account_balance(date_cursor=invoices[1].bill_date), 0)
