@@ -290,3 +290,77 @@ class TestEvaluateCancellationPendingDueToNonPay(unittest.TestCase):
 		self.assertFalse(
 				self.pa.evaluate_cancellation_pending_due_to_non_pay(self.date_cursor)
 		)
+
+class TestChangeSchedule(unittest.TestCase):
+
+	@classmethod
+	def setUpClass(cls):
+		cls.test_agent = Contact('Test Agent', 'Agent')
+		cls.test_insured = Contact('Test Insured', 'Named Insured')
+		db.session.add(cls.test_agent)
+		db.session.add(cls.test_insured)
+		db.session.commit()
+
+		cls.policy = Policy('Test Policy', date(2015, 1, 1), 1200)
+		cls.policy.named_insured = cls.test_insured.id
+		cls.policy.agent = cls.test_agent.id
+		db.session.add(cls.policy)
+		db.session.commit()
+
+	@classmethod
+	def tearDownClass(cls):
+		db.session.delete(cls.test_insured)
+		db.session.delete(cls.test_agent)
+		db.session.delete(cls.policy)
+		db.session.commit()
+
+	def setUp(self):
+		self.payments = []
+		self.policy.billing_schedule = "Quarterly"
+		self.pa = PolicyAccounting(self.policy.id)
+
+	def tearDown(self):
+		for invoice in self.policy.invoices:
+			db.session.delete(invoice)
+		for payment in self.payments:
+			db.session.delete(payment)
+		db.session.commit()
+
+	def test_without_schedule_change(self):
+		# Calculate the numeber of invoices
+		number_of_invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
+			.filter_by(deleted=False).count()
+
+		self.assertEquals(number_of_invoices, 4)
+
+	def test_with_monthly_schedule_change(self):
+		# Change the billing schedule
+		self.pa.change_schedule("Monthly")
+		
+		# Calculate the numeber of invoices
+		number_of_invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
+			.filter_by(deleted=False).count()
+
+		self.assertEquals(number_of_invoices, 12)
+
+	def test_with_anual_schedule_change(self):
+		# Change the billing schedule
+		self.pa.change_schedule("Annual")
+		
+		# Calculate the numeber of invoices
+		number_of_invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
+			.filter_by(deleted=False).count()
+
+		self.assertEquals(number_of_invoices, 1)
+
+	def test_balance_with_billing_changed(self):
+		self.date_cursor = date(2015, 3, 1)
+
+		# Change the billing schedule
+		self.pa.change_schedule("Monthly")
+
+		# Calculate the balance
+		balance = self.pa.return_account_balance(self.date_cursor)
+
+		# Assert the Balance
+		self.assertEquals(balance, 300)

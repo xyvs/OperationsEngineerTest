@@ -32,6 +32,7 @@ class PolicyAccounting(object):
 		# Select all the invoices
 		invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
 								.filter(Invoice.bill_date <= date_cursor)\
+								.filter_by(deleted=False)\
 								.order_by(Invoice.bill_date)\
 								.all()
 
@@ -90,6 +91,7 @@ class PolicyAccounting(object):
 		if due_amount != 0:
 				invoices = Invoice.query\
 					.filter_by(policy_id=self.policy.id)\
+					.filter_by(deleted=False)\
 					.filter(Invoice.due_date < date_cursor)\
 					.filter(Invoice.cancel_date > date_cursor)\
 					.all()
@@ -108,6 +110,7 @@ class PolicyAccounting(object):
 		# Select cancelled invoices
 		invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
 								.filter(Invoice.cancel_date <= date_cursor)\
+								.filter_by(deleted=False)\
 								.order_by(Invoice.bill_date)\
 								.all()
 
@@ -130,7 +133,7 @@ class PolicyAccounting(object):
 
 		# Delete all invoices
 		for invoice in self.policy.invoices:
-			invoice.delete()
+			invoice.deleted = True
 
 		# Define Billing Schedules
 		billing_schedules = {'Annual': None, 'Two-Pay': 2, 'Quarterly': 4, 'Monthly': 12}
@@ -212,6 +215,24 @@ class PolicyAccounting(object):
 		for invoice in invoices:
 			db.session.add(invoice)
 		db.session.commit()
+
+	def change_schedule(self, billing_schedule):
+
+		"""
+		 This function changes the billing schedule,
+		 by marking the old ones as deleted and 
+		 creating the new ones.
+		"""
+
+		# Change Schedule
+		self.policy.billing_schedule = billing_schedule
+		
+		# Commit to Database
+		db.session.commit()
+
+		# Generate new invoices
+		self.make_invoices()
+
 
 ################################
 # The functions below are for the db and 
