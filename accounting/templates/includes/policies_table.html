@@ -1,0 +1,29 @@
+<h2 class="pb-3 text-center">All Policies</h2>
+<div class="table-responsive">
+	<table class="table table-sm table-bordered">
+		<thead>
+			<tr>
+				<th scope="col">#</th>
+				<th scope="col">Policy Number</th>
+				<th scope="col">Name Insured</th>
+				<th scope="col">Effective Date</th>
+				<th scope="col">Annual Premium</th>
+				<th scope="col">Billing Schedule</th>
+				<th scope="col">Status</th>
+				<th scope="col">Agent</th>
+			</tr>
+		</thead>
+		<tbody data-bind="foreach: policies">
+			<tr>
+				<th scope="row" data-bind="text: id"></th>
+				<td data-bind="text: policy_number"></td>
+				<td data-bind="text: named_insured"></td>
+				<td data-bind="text: effective_date"></td>
+				<td data-bind="text: annual_premium"></td>
+				<td data-bind="text: billing_schedule"></td>
+				<td data-bind="text: status"></td>
+				<td data-bind="text: agent"></td>
+			</tr>
+		</tbody>
+	</table>
+</div>

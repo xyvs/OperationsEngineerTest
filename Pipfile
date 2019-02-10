@@ -11,6 +11,8 @@ nose = "==1.1.2"
 Flask = "==0.9"
 SQLAlchemy = "==0.7.9"
 Flask-SQLAlchemy = "==0.16"
+flask-marhsmallow = "*"
+flask-marshmallow = "*"
 
 [requires]
 python_version = "2.7"

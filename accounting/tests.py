@@ -409,14 +409,10 @@ class TestPolicyCancellation(unittest.TestCase):
 		date_cursor = date(2015, 3, 1)
 		self.assertTrue(self.pa.evaluate_cancel(date_cursor))
 
-	def test_policy_cancelation(self):
+	def test_policy_cancellation(self):
 		date_cursor = date(2015, 3, 1)
 
-		# Make Cancelation
-		cancelation = self.pa.cancel_policy("Cancelation Description", date_cursor)
-
-		from time import sleep
-
-		sleep(60)
-		self.assertTrue(cancelation)
+		# Make Cancellation
+		cancellation = self.pa.cancel_policy("Cancellation Description", date_cursor)
+		self.assertTrue(cancellation)
 

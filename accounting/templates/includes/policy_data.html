@@ -1,0 +1,86 @@
+<div data-bind="with: policy">
+	<div class="row">
+		<div class="mb-3">
+			<h2 class="d-inline mb-0 pr-2" data-bind="text: policy_number"></h2> <p class="d-inline text-muted">$<span data-bind="text: annual_premium"></span> - <span data-bind="text: effective_date"></span> - <span data-bind="text: named_insured"></span></p>
+		</div>
+	</div>
+	<div class="row" >
+		<div class="col-12 col-lg-4 text-center py-4">
+			<div class="card text-center">
+				<div class="card-body">
+					<h3>Due amount</h3>
+					<p class="text-muted">$<span data-bind="text: due_amount"></span></p>
+				</div>
+			</div>
+		</div>
+		<div class="col-12 col-lg-4 text-center py-4">
+			<div class="card text-center">
+				<div class="card-body">
+					<h3>Payed amount</h3>
+					<p class="text-muted">$<span data-bind="text: payed_amount"></span></p>
+				</div>
+			</div>
+		</div>
+		<div class="col-12 col-lg-4 text-center py-4">
+			<div class="card text-center">
+				<div class="card-body">
+					<h3>Necessary amount</h3>
+					<p class="text-muted">$<span data-bind="text: necessary_amount"></span></p>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-12 col-lg-6">
+			<div data-bind="visible: invoices().length > 0">
+				<hr>
+				<h2 class="pb-3 text-center">Invoices</h2>
+				<div class="table-responsive">
+					<table class="table table-sm table-bordered">
+						<thead>
+							<tr>
+								<th scope="col">Amount Due</th>
+								<th scope="col">Bill Date</th>
+								<th scope="col">Due Date</th>
+								<th scope="col">Cancel Date</th>
+							</tr>
+						</thead>
+						<tbody data-bind="foreach: invoices">
+							<tr>
+								<td data-bind="text: amount_due"></td>
+								<td data-bind="text: bill_date"></td>
+								<td data-bind="text: due_date"></td>
+								<td data-bind="text: cancel_date"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		<div class="col-12 col-lg-6">
+			<hr>
+			<h2 class="pb-3 text-center">Payments</h2>
+			<div data-bind="visible: payments().length > 0">
+				<div class="table-responsive">
+					<table class="table table-sm table-bordered">
+						<thead>
+							<tr>
+								<th scope="col">Amount Paid</th>
+								<th scope="col">Transaction Date</th>
+							</tr>
+						</thead>
+						<tbody data-bind="foreach: payments">
+							<tr>
+								<td data-bind="text: amount_paid"></td>
+								<td data-bind="text: transaction_date"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<div data-bind="visible: payments().length == 0">
+				<p class="text-muted text-center">No payments found.</p>
+			</div>
+		</div>
+	</div>
+</div>

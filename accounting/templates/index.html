@@ -1,15 +1,10 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Some sort of title?</title>
-  <meta name="description" content="What is this?">
-  <meta name="author" content="Who?">
-  <!--[if lt IE 9]>
-<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-<![endif]-->
-</head>
-<body>
-    <p>Your server is working.</p>
-</body>
-</html>
+{% extends 'base/base.html' %}
+{% block title %}Index{% endblock %}
+{% block content %}
+	<div data-bind="visible: displayPolicies">
+		{% include 'includes/policies_table.html'%}
+	</div>
+	<div data-bind="visible: displayPolicy">
+		{% include 'includes/policy_data.html'%}
+	</div>
+{% endblock %}

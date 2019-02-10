@@ -22,9 +22,60 @@ class PolicyAccounting(object):
 		if not self.policy.invoices:
 			self.make_invoices()
 
-	def return_account_balance(self, date_cursor=None):
+	def generate_policy_dict(self, date_cursor=None):
+
+		policy_dict = {
+			'id': self.policy.id,
+			'policy_number': self.policy.policy_number,
+			'effective_date': str(self.policy.effective_date),
+			'status': self.policy.status,
+			'billing_schedule': self.policy.billing_schedule,
+			'annual_premium': self.policy.annual_premium,
+			'named_insured': self.policy.named_insured,
+			'agent': self.policy.agent,
+		}
+
+		# Query invoices
+		invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
+								.filter_by(deleted=False)\
+								.all()
+
+		# Generate invoices dict
+		invoices = [{
+			'bill_date':str(invoice.bill_date),
+			'due_date':str(invoice.due_date),
+			'cancel_date':str(invoice.cancel_date),
+			'amount_due':invoice.amount_due,
+		} for invoice in invoices]
+
+		# Query payments
+		payments = Payment.query.filter_by(policy_id=self.policy.id).all()
+
+		# Generate payments dict
+		payments = [{
+			'amount_paid':payment.amount_paid,
+			'transaction_date':str(payment.transaction_date),
+		} for payment in payments]
+
+		# Set invoices and payments
+		policy_dict['invoices'] = invoices
+		policy_dict['payments'] = payments
+
+		# Get due amount and payed amount
+		due_amount = self.get_due_amount(date_cursor)
+		payed_amount = self.get_payed_amount(date_cursor)
+
+		# Set due amount, payed amount and necessary amount
+		policy_dict['due_amount'] = due_amount
+		policy_dict['payed_amount'] = payed_amount
+		policy_dict['necessary_amount'] = due_amount - payed_amount
+
+		return policy_dict
+
+	def get_due_amount(self, date_cursor=None):
 		"""
-		 This function return the total due amount at a given date.
+		 This function returns the total amount
+		 of all invoices at a given date.
 		"""
 		if not date_cursor:
 			date_cursor = datetime.now().date()
@@ -37,9 +88,18 @@ class PolicyAccounting(object):
 								.all()
 
 		# Calculate the total due amount
-		due_now = 0
+		due_amount = 0
 		for invoice in invoices:
-			due_now += invoice.amount_due
+			due_amount += invoice.amount_due
+
+		return due_amount
+
+	def get_payed_amount(self, date_cursor=None):
+		"""
+		 This function returns the total amount payed.
+		"""
+		if not date_cursor:
+			date_cursor = datetime.now().date()
 
 		# Select all the payments made
 		payments = Payment.query.filter_by(policy_id=self.policy.id)\
@@ -47,10 +107,24 @@ class PolicyAccounting(object):
 								.all()
 
 		# Calculate the due amount without the payments already made
+		total_amount = 0
 		for payment in payments:
-			due_now -= payment.amount_paid
+			total_amount += payment.amount_paid
 
-		return due_now
+		return total_amount
+
+	def return_account_balance(self, date_cursor=None):
+		"""
+		 This function return the total due amount at a given date.
+		"""
+		if not date_cursor:
+			date_cursor = datetime.now().date()
+
+		# Calculate the total due amount
+		due_amount = self.get_due_amount(date_cursor)
+		payed_amount = self.get_payed_amount(date_cursor)
+
+		return due_amount - payed_amount
 
 	def make_payment(self, contact_id=None, date_cursor=None, amount=0):
 		"""
@@ -121,7 +195,7 @@ class PolicyAccounting(object):
 		if difference_days <= 60:
 			return True
 
-		# Evaluate policy cancelation
+		# Evaluate policy cancellation
 		for invoice in invoices:
 			if not self.return_account_balance(invoice.cancel_date):
 				continue
@@ -247,7 +321,7 @@ class PolicyAccounting(object):
 		if not date_cursor:
 			date_cursor = datetime.now().date()
 
-		# Evaluate Cancelation
+		# Evaluate Cancellation
 		evaluate_cancel = self.evaluate_cancel(date_cursor)
 
 		if evaluate_cancel:
