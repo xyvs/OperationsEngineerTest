@@ -1,8 +1,8 @@
 <nav class="navbar navbar-light bg-light py-5">
 	<a href="{{ url_for('index') }}" class="navbar-brand">OperationsEngineerTest</a>
 	<form class="form-inline" data-bind="submit: getIndividualPolicy">
-		<input class="form-control form-control-sm mr-sm-2" type="search" placeholder="Search for a policy" aria-label="Search" data-bind="value: policyNumber">
-		<input id="date" class="form-control form-control-sm mr-sm-2" type="date" aria-label="Date" data-bind="value: dateCursor">
+		<input class="form-control form-control-sm mr-sm-2" type="number" placeholder="Search for a policy" a data-bind="value: policyNumber">
+		<input class="form-control form-control-sm mr-sm-2" type="date" data-bind="value: dateCursor">
 		<button class="btn btn-sm btn-outline-success my-2 my-sm-0">Search</button>
 	</form>
 </nav>
