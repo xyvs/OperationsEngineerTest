@@ -36,7 +36,7 @@ function PoliciesListViewModel() {
 	// Search Data
 	self.policyNumber = ko.observable();
 	self.policy = ko.observable();
-	self.dateCursor = ko.observable(new Date());
+	self.dateCursor = ko.observable('2015/02/01');
 	self.displayPolicies = ko.observable(true)
 	self.displayPolicy = ko.observable(false)
 
@@ -112,7 +112,6 @@ function PoliciesListViewModel() {
 	});
 }
 $(document).ready(function() {
-
 	// Start the binding
 	ko.applyBindings(new PoliciesListViewModel());
 });

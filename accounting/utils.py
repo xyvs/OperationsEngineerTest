@@ -216,7 +216,7 @@ class PolicyAccounting(object):
 			invoice.deleted = True
 
 		# Define Billing Schedules
-		billing_schedules = {'Annual': None, 'Two-Pay': 2, 'Quarterly': 4, 'Monthly': 12}
+		billing_schedules = {'Annual': 1, 'Two-Pay': 2, 'Quarterly': 4, 'Monthly': 12}
 
 		# Generate first invoice
 		invoices = []
@@ -228,56 +228,19 @@ class PolicyAccounting(object):
 		invoices.append(first_invoice)
 
 		# Generate more invoices if needed
-		if self.policy.billing_schedule == "Annual":
-			pass
+		if self.policy.billing_schedule in billing_schedules:
 
-		elif self.policy.billing_schedule == "Two-Pay":
+			# Get total number of payments
+			total_payments = billing_schedules.get(self.policy.billing_schedule)
+
 			# Calculate amount per invoice
-			first_invoice.amount_due = first_invoice.amount_due / billing_schedules.get(self.policy.billing_schedule)
-			
+			first_invoice.amount_due /= total_payments
+
 			# Generates more invoices based on the quantity
-			for i in range(1, billing_schedules.get(self.policy.billing_schedule)):
+			for i in range(1, total_payments):
 
 				# Calculate invoice date
-				months_after_eff_date = i*6
-				bill_date = self.policy.effective_date + relativedelta(months=months_after_eff_date)
-
-				# Generate Invoice
-				invoice = Invoice(self.policy.id,
-									bill_date,
-									bill_date + relativedelta(months=1),
-									bill_date + relativedelta(months=1, days=14),
-									self.policy.annual_premium / billing_schedules.get(self.policy.billing_schedule))
-				invoices.append(invoice)
-
-		elif self.policy.billing_schedule == "Quarterly":
-			# Calculate amount per invoice
-			first_invoice.amount_due = first_invoice.amount_due / billing_schedules.get(self.policy.billing_schedule)
-			
-			# Generates more invoices based on the quantity
-			for i in range(1, billing_schedules.get(self.policy.billing_schedule)):
-
-				# Calculate invoice date
-				months_after_eff_date = i*3
-				bill_date = self.policy.effective_date + relativedelta(months=months_after_eff_date)
-
-				# Generate Invoice
-				invoice = Invoice(self.policy.id,
-									bill_date,
-									bill_date + relativedelta(months=1),
-									bill_date + relativedelta(months=1, days=14),
-									self.policy.annual_premium / billing_schedules.get(self.policy.billing_schedule))
-				invoices.append(invoice)
-
-		elif self.policy.billing_schedule == "Monthly":
-			# Calculate amount per invoice
-			first_invoice.amount_due = first_invoice.amount_due / billing_schedules.get(self.policy.billing_schedule)
-			
-			# Generates more invoices based on the quantity
-			for i in range(1, billing_schedules.get(self.policy.billing_schedule)):
-
-				# Calculate invoice date
-				months_after_eff_date = i*1
+				months_after_eff_date = i*(12/total_payments)
 				bill_date = self.policy.effective_date + relativedelta(months=months_after_eff_date)
 
 				# Generate Invoice
@@ -388,6 +351,12 @@ def insert_data():
 	p3.named_insured = ryan_bucket.id
 	p3.agent = john_doe_agent.id
 	policies.append(p3)
+
+	p4 = Policy('Policy Four', date(2015, 2, 1), 500)
+	p4.billing_schedule = 'Two-Pay'
+	p4.named_insured = ryan_bucket.id
+	p4.agent = john_doe_agent.id
+	policies.append(p4)
 
 	for policy in policies:
 		db.session.add(policy)
